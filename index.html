@@ -28,18 +28,27 @@
         let enemies = [];
         let platforms = [];
 
+        const playerImage = new Image();
+        playerImage.src = "player.png";
+        const enemyImage = new Image();
+        enemyImage.src = "enemy.png";
+
         class GameObject {
-            constructor(x, y, width, height, color) {
+            constructor(x, y, width, height, image) {
                 this.x = x;
                 this.y = y;
                 this.width = width;
                 this.height = height;
-                this.color = color;
+                this.image = image;
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                if (this.image) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
             }
 
             collidesWith(other) {
@@ -54,7 +63,7 @@
 
         class Player extends GameObject {
             constructor() {
-                super(50, canvas.height - 100, 50, 80, "blue");
+                super(50, canvas.height - 100, 50, 80, playerImage);
                 this.velocityX = 0;
                 this.velocityY = 0;
                 this.speed = 5;
@@ -86,7 +95,7 @@
 
         class Enemy extends GameObject {
             constructor(x, y) {
-                super(x, y, 50, 50, "red");
+                super(x, y, 50, 50, enemyImage);
                 this.speed = 2;
             }
 
@@ -96,26 +105,9 @@
             }
         }
 
-        class Projectile extends GameObject {
-            constructor(x, y) {
-                super(x, y, 10, 5, "yellow");
-                this.speed = 7;
-            }
-
-            update() {
-                this.x += this.speed;
-                enemies.forEach((enemy, index) => {
-                    if (this.collidesWith(enemy)) {
-                        enemies.splice(index, 1);
-                        score += 10;
-                    }
-                });
-            }
-        }
-
         function generatePlatforms() {
-            platforms.push(new GameObject(200, 350, 200, 20, "brown"));
-            platforms.push(new GameObject(500, 250, 150, 20, "brown"));
+            platforms.push(new GameObject(200, 350, 200, 20, null));
+            platforms.push(new GameObject(500, 250, 150, 20, null));
         }
 
         function generateEnemies() {
@@ -133,14 +125,6 @@
             player.update();
             player.draw();
             
-            projectiles.forEach((projectile, index) => {
-                projectile.update();
-                projectile.draw();
-                if (projectile.x > canvas.width) {
-                    projectiles.splice(index, 1);
-                }
-            });
-
             enemies.forEach(enemy => {
                 enemy.update();
                 enemy.draw();
@@ -165,7 +149,6 @@
                 player.velocityY = -player.jumpPower;
                 player.grounded = false;
             }
-            if (e.code === "Space") projectiles.push(new Projectile(player.x + player.width, player.y + player.height / 2));
         });
 
         document.addEventListener("keyup", (e) => {
