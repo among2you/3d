@@ -26,7 +26,7 @@
         let level = 1;
         let projectiles = [];
         let enemies = [];
-        let players = [];
+        let platforms = [];
 
         class GameObject {
             constructor(x, y, width, height, color) {
@@ -41,57 +41,53 @@
                 ctx.fillStyle = this.color;
                 ctx.fillRect(this.x, this.y, this.width, this.height);
             }
+
+            collidesWith(other) {
+                return (
+                    this.x < other.x + other.width &&
+                    this.x + this.width > other.x &&
+                    this.y < other.y + other.height &&
+                    this.y + this.height > other.y
+                );
+            }
         }
 
         class Player extends GameObject {
-            constructor(x, color, controls) {
-                super(x, canvas.height - 100, 50, 80, color);
+            constructor() {
+                super(50, canvas.height - 100, 50, 80, "blue");
                 this.velocityX = 0;
                 this.velocityY = 0;
                 this.speed = 5;
                 this.jumpPower = 12;
                 this.grounded = false;
                 this.health = 100;
-                this.controls = controls;
             }
 
             update() {
                 this.velocityY += gravity;
                 this.y += this.velocityY;
                 this.x += this.velocityX;
-
-                if (this.y + this.height >= canvas.height) {
-                    this.y = canvas.height - this.height;
-                    this.velocityY = 0;
-                    this.grounded = true;
-                } else {
-                    this.grounded = false;
-                }
-            }
-
-            attack() {
-                projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2));
+                this.grounded = false;
+                platforms.forEach(platform => {
+                    if (this.collidesWith(platform)) {
+                        this.y = platform.y - this.height;
+                        this.velocityY = 0;
+                        this.grounded = true;
+                    }
+                });
+                enemies.forEach(enemy => {
+                    if (this.collidesWith(enemy)) {
+                        this.health -= 1;
+                        if (this.health <= 0) gameOver = true;
+                    }
+                });
             }
         }
 
         class Enemy extends GameObject {
             constructor(x, y) {
                 super(x, y, 50, 50, "red");
-                this.speed = 2 + level * 0.5;
-                this.health = 100;
-            }
-
-            update() {
-                this.x -= this.speed;
-                if (this.x < 0) this.x = canvas.width;
-            }
-        }
-
-        class Boss extends GameObject {
-            constructor() {
-                super(canvas.width - 200, canvas.height - 150, 100, 100, "purple");
-                this.health = 500;
-                this.speed = 1.5;
+                this.speed = 2;
             }
 
             update() {
@@ -108,26 +104,34 @@
 
             update() {
                 this.x += this.speed;
+                enemies.forEach((enemy, index) => {
+                    if (this.collidesWith(enemy)) {
+                        enemies.splice(index, 1);
+                        score += 10;
+                    }
+                });
             }
+        }
+
+        function generatePlatforms() {
+            platforms.push(new GameObject(200, 350, 200, 20, "brown"));
+            platforms.push(new GameObject(500, 250, 150, 20, "brown"));
         }
 
         function generateEnemies() {
             return [new Enemy(600, canvas.height - 50), new Enemy(400, canvas.height - 50), new Enemy(750, canvas.height - 50)];
         }
 
-        players.push(new Player(50, "blue", { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", attack: "KeyM" }));
-        players.push(new Player(100, "green", { left: "KeyA", right: "KeyD", jump: "KeyW", attack: "KeyG" }));
+        const player = new Player();
         enemies = generateEnemies();
-        let boss = new Boss();
+        generatePlatforms();
 
         function gameLoop() {
             if (gameOver) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            players.forEach(player => {
-                player.update();
-                player.draw();
-            });
+            player.update();
+            player.draw();
             
             projectiles.forEach((projectile, index) => {
                 projectile.update();
@@ -137,41 +141,36 @@
                 }
             });
 
-            enemies.forEach((enemy, index) => {
+            enemies.forEach(enemy => {
                 enemy.update();
                 enemy.draw();
             });
 
-            if (score >= 100) {
-                boss.update();
-                boss.draw();
-            }
+            platforms.forEach(platform => {
+                platform.draw();
+            });
             
             ctx.fillStyle = "white";
             ctx.fillText(`Score: ${score}`, 10, 20);
-            ctx.fillText(`Level: ${level}`, 10, 40);
+            ctx.fillText(`Health: ${player.health}`, 10, 40);
             requestAnimationFrame(gameLoop);
         }
 
         gameLoop();
 
         document.addEventListener("keydown", (e) => {
-            players.forEach(player => {
-                if (e.code === player.controls.right) player.velocityX = player.speed;
-                if (e.code === player.controls.left) player.velocityX = -player.speed;
-                if (e.code === player.controls.jump && player.grounded) {
-                    player.velocityY = -player.jumpPower;
-                    player.grounded = false;
-                }
-                if (e.code === player.controls.attack) player.attack();
-            });
+            if (e.code === "ArrowRight") player.velocityX = player.speed;
+            if (e.code === "ArrowLeft") player.velocityX = -player.speed;
+            if (e.code === "ArrowUp" && player.grounded) {
+                player.velocityY = -player.jumpPower;
+                player.grounded = false;
+            }
+            if (e.code === "Space") projectiles.push(new Projectile(player.x + player.width, player.y + player.height / 2));
         });
 
         document.addEventListener("keyup", (e) => {
-            players.forEach(player => {
-                if (e.code === player.controls.right && player.velocityX > 0) player.velocityX = 0;
-                if (e.code === player.controls.left && player.velocityX < 0) player.velocityX = 0;
-            });
+            if (e.code === "ArrowRight" && player.velocityX > 0) player.velocityX = 0;
+            if (e.code === "ArrowLeft" && player.velocityX < 0) player.velocityX = 0;
         });
     </script>
 </body>
