@@ -1,0 +1,91 @@
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 800;
+canvas.height = 500;
+
+const gravity = 0.5;
+let keys = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+    const player = new Player();
+    const enemies = [new Enemy(600, canvas.height - 50), new Enemy(400, canvas.height - 50)];
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        player.update();
+        player.draw();
+        enemies.forEach(enemy => enemy.draw());
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+});
+
+class Player {
+    constructor() {
+        this.x = 50;
+        this.y = canvas.height - 100;
+        this.width = 50;
+        this.height = 80;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.speed = 5;
+        this.jumpPower = 12;
+        this.grounded = false;
+        this.sprite = new Image();
+        this.sprite.src = "assets/player_spritesheet.png";
+    }
+
+    draw() {
+        ctx.fillStyle = "blue";
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+
+    update() {
+        this.velocityY += gravity;
+        this.y += this.velocityY;
+        this.x += this.velocityX;
+
+        if (this.y + this.height >= canvas.height) {
+            this.y = canvas.height - this.height;
+            this.velocityY = 0;
+            this.grounded = true;
+        } else {
+            this.grounded = false;
+        }
+    }
+}
+
+class Enemy {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 50;
+        this.height = 50;
+        this.speed = 2;
+        this.sprite = new Image();
+        this.sprite.src = "assets/enemy_spritesheet.png";
+    }
+
+    draw() {
+        ctx.fillStyle = "red";
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+}
+
+document.addEventListener("keydown", (e) => {
+    keys[e.code] = true;
+    if (e.code === "ArrowRight") player.velocityX = player.speed;
+    if (e.code === "ArrowLeft") player.velocityX = -player.speed;
+    if (e.code === "Space" && player.grounded) {
+        player.velocityY = -player.jumpPower;
+        player.grounded = false;
+    }
+});
+
+document.addEventListener("keyup", (e) => {
+    keys[e.code] = false;
+    if (e.code === "ArrowRight" && player.velocityX > 0) player.velocityX = 0;
+    if (e.code === "ArrowLeft" && player.velocityX < 0) player.velocityX = 0;
+});
