@@ -33,10 +33,11 @@
                 this.speed = 5;
                 this.jumpPower = 12;
                 this.grounded = false;
+                this.attacking = false;
             }
 
             draw() {
-                ctx.fillStyle = "blue";
+                ctx.fillStyle = this.attacking ? "yellow" : "blue";
                 ctx.fillRect(this.x, this.y, this.width, this.height);
             }
 
@@ -91,12 +92,14 @@
                 player.velocityY = -player.jumpPower;
                 player.grounded = false;
             }
+            if (e.code === "KeyX") player.attacking = true;
         });
 
         document.addEventListener("keyup", (e) => {
             keys[e.code] = false;
             if (e.code === "ArrowRight" && player.velocityX > 0) player.velocityX = 0;
             if (e.code === "ArrowLeft" && player.velocityX < 0) player.velocityX = 0;
+            if (e.code === "KeyX") player.attacking = false;
         });
     </script>
 </body>
